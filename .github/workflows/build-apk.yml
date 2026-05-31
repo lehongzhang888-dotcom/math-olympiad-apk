@@ -1,0 +1,59 @@
+name: Build MathOlympiad APK
+
+on:
+  push:
+    branches: [ "main" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 检出代码
+        uses: actions/checkout@v4
+
+      - name: 设置 Java 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: 设置 Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: 生成签名密钥
+        run: |
+          keytool -genkey -v \
+            -keystore app/matholympiad.keystore \
+            -alias matholympiad \
+            -keyalg RSA -keysize 2048 -validity 10000 \
+            -storepass math123456 -keypass math123456 \
+            -dname "CN=MathOlympiad,O=MathOlympiad,C=CN" \
+            -noprompt
+
+      - name: 创建签名配置文件
+        run: |
+          cat > app/keystore.properties << 'EOF'
+          storeFile=matholympiad.keystore
+          storePassword=math123456
+          keyAlias=matholympiad
+          keyPassword=math123456
+          EOF
+
+      - name: 下载 gradlew
+        run: |
+          curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradlew" -o gradlew
+          chmod +x gradlew
+          mkdir -p gradle/wrapper
+          curl -sL "https://raw.githubusercontent.com/gradle/gradle/v8.5.0/gradle/wrapper/gradle-wrapper.jar" -o gradle/wrapper/gradle-wrapper.jar
+
+      - name: 构建 Release APK
+        run: ./gradlew assembleRelease
+
+      - name: 上传 Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: math-olympiad-release
+          path: app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
