@@ -35,7 +35,7 @@ jobs:
       - name: 创建签名配置文件
         run: |
           cat > app/keystore.properties << 'EOF'
-          storeFile=matholympiad.keystore
+          storeFile=app/matholympiad.keystore
           storePassword=math123456
           keyAlias=matholympiad
           keyPassword=math123456
